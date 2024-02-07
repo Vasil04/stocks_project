@@ -37,17 +37,34 @@ def save_saved_stocks(saved_stocks):
         json.dump(saved_stocks, file)
 
 
+def fetch_quote(stock: str, query_result: dict):
+    query_result[stock] = finnhub_client.quote(stock)
+
+
 def load_saved_stocks():
     stocks = get_saved_stocks()
+    queries = {}
 
     for widget in frameM_saved_stocks.winfo_children():
         widget.destroy()
 
+    threads = []
+
+    for stock in stocks:
+        thread = threading.Thread(target=fetch_quote, args=(stock, queries))
+        thread.start()
+        threads.append(thread)
+
+    # Wait for all threads to complete
+    for thread in threads:
+        thread.join()
+
+    # print(queries)
     for index, stock in enumerate(stocks):
-        display_saved_stocks(stock, index)
+        display_saved_stocks(stock, queries[stock]["c"], queries[stock]["pc"], index)
 
 
-def display_saved_stocks(symbol: str, row: int):
+def display_saved_stocks(symbol: str, current_price: float, last_price: float, row: int):
     frame_stock = tk.Frame(frameM_saved_stocks)
     frame_stock.grid_columnconfigure(0, weight=1)
 
@@ -56,10 +73,6 @@ def display_saved_stocks(symbol: str, row: int):
 
     empty_label4 = tk.Label(frame_stock, width=25)
     empty_label4.grid(row=0, column=1)
-
-    query = finnhub_client.quote(symbol)
-    current_price = query["c"]
-    last_price = query["pc"]
 
     label_price = tk.Label(frame_stock, text=current_price, width=10)
 
