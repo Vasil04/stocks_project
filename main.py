@@ -21,8 +21,10 @@ def on_button_add_click(symbol: str):
     exists = False if symbol not in get_saved_stocks() else True
     save_stock_locally(symbol)
     if not exists:
+        query = {}
+        fetch_quote(symbol, query)
         length = len(get_saved_stocks())
-        display_saved_stocks(symbol, length)
+        display_saved_stocks(symbol, query[symbol]["c"], query[symbol]["pc"],length)
 
 
 def save_stock_locally(symbol: str):
