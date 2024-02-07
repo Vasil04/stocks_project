@@ -2,15 +2,86 @@ import tkinter as tk
 from tkinter import font
 import finnhub
 import threading
+import json
+import os
+
 
 finnhub_client = finnhub.Client(api_key="cmvoki1r01qkcvkeu40gcmvoki1r01qkcvkeu410")
 base_url = "https://finnhub.io/api/v1"
+saved_stocks_file = "saved_stocks.json"
 
 
 def on_entry_click(event):
     if entry.get() == "Enter your text here":
         entry.delete(0, tk.END)
         entry.config(fg='black')
+
+
+def on_button_add_click(symbol: str):
+    exists = False if symbol not in get_saved_stocks() else True
+    save_stock_locally(symbol)
+    if not exists:
+        length = len(get_saved_stocks())
+        display_saved_stocks(symbol, length)
+
+
+def save_stock_locally(symbol: str):
+    saved_stocks = get_saved_stocks()
+    if symbol not in saved_stocks:
+        saved_stocks.append(symbol)
+        save_saved_stocks(saved_stocks)
+
+
+def save_saved_stocks(saved_stocks):
+    with open(saved_stocks_file, "w") as file:
+        json.dump(saved_stocks, file)
+
+
+def load_saved_stocks():
+    stocks = get_saved_stocks()
+
+    for widget in frameM_saved_stocks.winfo_children():
+        widget.destroy()
+
+    for index, stock in enumerate(stocks):
+        display_saved_stocks(stock, index)
+
+
+def display_saved_stocks(symbol: str, row: int):
+    frame_stock = tk.Frame(frameM_saved_stocks)
+    frame_stock.grid_columnconfigure(0, weight=1)
+
+    label_symbol = tk.Label(frame_stock, text=symbol, width=10)
+    label_symbol.grid(row=0, column=0, sticky="ew")
+
+    empty_label4 = tk.Label(frame_stock, width=25)
+    empty_label4.grid(row=0, column=1)
+
+    query = finnhub_client.quote(symbol)
+    current_price = query["c"]
+    last_price = query["pc"]
+
+    label_price = tk.Label(frame_stock, text=current_price, width=10)
+
+    if current_price > last_price:
+        label_price.config(fg="green")
+    elif current_price < last_price:
+        label_price.config(fg="red")
+
+    label_price.grid(row=0, column=2, sticky="ew")
+
+    frame_stock.grid(row=row, column=0)
+
+
+def get_saved_stocks():
+    if not os.path.isfile(saved_stocks_file):
+        with open(saved_stocks_file, "w") as file:
+            json.dump([], file)
+    try:
+        with open(saved_stocks_file, "r") as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return []
 
 
 def create_search_result(symbol: str, row: int):
@@ -25,6 +96,17 @@ def create_search_result(symbol: str, row: int):
 
     label_price = tk.Label(frame_temp, text=finnhub_client.quote(symbol)["c"], width=10)
     label_price.grid(row=0, column=2, sticky="ew")
+
+    button_add = tk.Button(
+        frame_temp,
+        command=lambda: on_button_add_click(symbol),
+        text="Add",
+        width=4,
+        height=1,
+        bg="#c4c4c4",
+        fg="black", )
+
+    button_add.grid(row=0, column=3)
 
     frame_temp.grid(row=row, column=0, pady=5, padx=15)
 
@@ -64,7 +146,10 @@ default_text = "Enter your text here"
 
 frameL = tk.Frame()
 frameL_results = tk.Frame(frameL)
-frameM = tk.Frame(bg="lightgreen")
+
+frameM = tk.Frame()
+frameM_saved_stocks = tk.Frame(frameM)
+
 frameR = tk.Frame()
 
 # LEFT FRAME------------------------------------------------------------------------------------
@@ -115,6 +200,8 @@ times_font = font.Font(family='Times', size=20, slant='italic')
 label1 = tk.Label(frameM, text="My stocks:", bg="lightgreen", font=times_font)
 label1.grid(row=0, column=0)
 
+frameM_saved_stocks.grid(row=1, column=0, pady=(20, 0))
+load_saved_stocks()
 
 # RIGHT FRAME------------------------------------------------------------------------------------
 
