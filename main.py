@@ -27,6 +27,10 @@ def on_button_add_click(symbol: str):
         display_saved_stocks(symbol, query[symbol]["c"], query[symbol]["pc"],length)
 
 
+def on_button_delete_click(symbol: str):
+    pass
+
+
 def save_stock_locally(symbol: str):
     saved_stocks = get_saved_stocks()
     if symbol not in saved_stocks:
@@ -47,7 +51,7 @@ def load_saved_stocks():
     stocks = get_saved_stocks()
     queries = {}
 
-    for widget in frameM_saved_stocks.winfo_children():
+    for widget in frame_container.winfo_children():
         widget.destroy()
 
     threads = []
@@ -67,7 +71,7 @@ def load_saved_stocks():
 
 
 def display_saved_stocks(symbol: str, current_price: float, last_price: float, row: int):
-    frame_stock = tk.Frame(frameM_saved_stocks)
+    frame_stock = tk.Frame(frame_container)
     frame_stock.grid_columnconfigure(0, weight=1)
 
     label_symbol = tk.Label(frame_stock, text=symbol, width=10)
@@ -77,6 +81,16 @@ def display_saved_stocks(symbol: str, current_price: float, last_price: float, r
     empty_label4.grid(row=0, column=1)
 
     label_price = tk.Label(frame_stock, text=current_price, width=10)
+
+    button_delete = tk.Button(
+        frame_stock,
+        command=lambda: on_button_delete_click(symbol),
+        text="Delete",
+        width=6,
+        height=1,
+        bg="#e32245",
+        fg="white", )
+    button_delete.grid(row=1, column=2, pady=10)
 
     if current_price > last_price:
         label_price.config(fg="green")
@@ -151,21 +165,33 @@ def on_button_click_clear():
         widget.destroy()
 
 
+def update_prices():
+    load_saved_stocks()
+    print("Updating...")
+    root.after(20000, update_prices)
+
+
+def on_configure(event):
+    canvas.configure(scrollregion=canvas.bbox("all"))
+
+
 root = tk.Tk()
 root.title("Stocks")
-root.geometry("400x300")
 root.state('zoomed')
 
 
 default_text = "Enter your text here"
 
-frameL = tk.Frame()
+frame_container_grande = tk.Frame(root)
+frame_container_grande.grid(row=0, column=0, sticky="nsew")
+
+frameL = tk.Frame(frame_container_grande)
 frameL_results = tk.Frame(frameL)
 
-frameM = tk.Frame()
+frameM = tk.Frame(frame_container_grande)
 frameM_saved_stocks = tk.Frame(frameM)
 
-frameR = tk.Frame()
+frameR = tk.Frame(frame_container_grande)
 
 # LEFT FRAME------------------------------------------------------------------------------------
 entry = tk.Entry(
@@ -215,21 +241,47 @@ times_font = font.Font(family='Times', size=20, slant='italic')
 label1 = tk.Label(frameM, text="My stocks:", bg="lightgreen", font=times_font)
 label1.grid(row=0, column=0)
 
-frameM_saved_stocks.grid(row=1, column=0, pady=(20, 0))
-load_saved_stocks()
+frameM_saved_stocks.grid(row=1, column=0, pady=(20, 0), sticky="nsew")
+
+canvas = tk.Canvas(frameM_saved_stocks)
+canvas.grid(row=0, column=0, sticky="nsew")
+
+scrollbar = tk.Scrollbar(frameM_saved_stocks, orient=tk.VERTICAL, command=canvas.yview)
+scrollbar.grid(row=0, column=1, sticky="ns")
+
+canvas.configure(yscrollcommand=scrollbar.set)
+
+frame_container = tk.Frame(canvas)
+canvas.create_window((0, 0), window=frame_container, anchor=tk.NW)
+
+frame_container.bind("<Configure>", on_configure)
+
+# load_saved_stocks()
 
 # RIGHT FRAME------------------------------------------------------------------------------------
 
-frameL.grid(row=0, column=0, sticky='nsew')
+# ----------------------------------------------------------------------------------------------------------------------
+update_prices()
 
-empty_label1 = tk.Label(width=10)
+frameL.grid(row=0, column=0, stick="nsew")
+
+empty_label1 = tk.Label(frame_container_grande, width=10)
 empty_label1.grid(row=0, column = 1)
 
-frameM.grid(row=0, column=2, sticky='nsew')
+frameM.grid(row=0, column=2, sticky="nsew")
 
-empty_label2 = tk.Label(width=10)
+empty_label2 = tk.Label(frame_container_grande, width=10)
 empty_label2.grid(row=0, column = 3)
 
-frameR.grid(row=0, column=4, sticky='nsew')
+frameR.grid(row=0, column=4, sticky="nsew")
+
+root.grid_rowconfigure(0, weight=1)
+root.grid_columnconfigure(0, weight=1)
+
+frame_container_grande.grid_rowconfigure(0, weight=1)
+# frame_container_grande.grid_columnconfigure(0, weight=1)
+
+frameM.grid_rowconfigure(1, weight=1)
+frameM_saved_stocks.grid_rowconfigure(0, weight=1)
 
 root.mainloop()
