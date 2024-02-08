@@ -28,7 +28,17 @@ def on_button_add_click(symbol: str):
 
 
 def on_button_delete_click(symbol: str):
-    pass
+    stocks = get_saved_stocks()
+    stocks.remove(symbol)
+    save_saved_stocks(stocks)
+
+    del stock_prices[symbol]
+
+    for widget in frame_container.winfo_children():
+        widget.destroy()
+
+    for index, stock in enumerate(stocks):
+        display_saved_stocks(stock, stock_prices[stock][0]["c"], stock_prices[stock][0]["pc"], index)
 
 
 def save_stock_locally(symbol: str):
@@ -61,13 +71,12 @@ def load_saved_stocks():
         thread.start()
         threads.append(thread)
 
-    # Wait for all threads to complete
     for thread in threads:
         thread.join()
 
-    # print(queries)
     for index, stock in enumerate(stocks):
         display_saved_stocks(stock, queries[stock]["c"], queries[stock]["pc"], index)
+        stock_prices[stock] = [{"c": queries[stock]["c"], "pc": queries[stock]["pc"]}]
 
 
 def display_saved_stocks(symbol: str, current_price: float, last_price: float, row: int):
@@ -102,7 +111,7 @@ def display_saved_stocks(symbol: str, current_price: float, last_price: float, r
     frame_stock.grid(row=row, column=0)
 
 
-def get_saved_stocks():
+def get_saved_stocks() -> list:
     if not os.path.isfile(saved_stocks_file):
         with open(saved_stocks_file, "w") as file:
             json.dump([], file)
@@ -181,6 +190,7 @@ root.state('zoomed')
 
 
 default_text = "Enter your text here"
+stock_prices = {}
 
 frame_container_grande = tk.Frame(root)
 frame_container_grande.grid(row=0, column=0, sticky="nsew")
