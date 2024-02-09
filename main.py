@@ -1,60 +1,65 @@
+"""Docstring, empty for now as further changes in the code are expected"""
+import os
+import threading
+import json
+
 import tkinter as tk
 from tkinter import font
 import finnhub
-import threading
-import json
-import os
 
-
-finnhub_client = finnhub.Client(api_key="cmvoki1r01qkcvkeu40gcmvoki1r01qkcvkeu410")
-base_url = "https://finnhub.io/api/v1"
-saved_stocks_file = "saved_stocks.json"
+finnhub_client = finnhub.Client(
+    api_key="cmvoki1r01qkcvkeu40gcmvoki1r01qkcvkeu410"
+)
+SAVED_STOCKS_FILE = "saved_stocks.json"
 
 
 def on_entry_click(event):
     if entry.get() == "Enter your text here":
         entry.delete(0, tk.END)
-        entry.config(fg='black')
+        entry.config(fg="black")
 
 
-def on_button_add_click(symbol: str):
-    exists = False if symbol not in get_saved_stocks() else True
-    save_stock_locally(symbol)
+def on_button_add_click(stock_symbol: str):
+    exists = not stock_symbol not in get_saved_stocks()
+    save_stock_locally(stock_symbol)
     if not exists:
         query = {}
-        fetch_quote(symbol, query)
-        length = len(get_saved_stocks())
-        display_saved_stocks(symbol, query[symbol]["c"], query[symbol]["pc"],length)
+        fetch_quote(stock_symbol, query)
+        saved_stocks_count = len(get_saved_stocks())
+        stock_prices[stock_symbol] = [
+            {"c": query[stock_symbol]["c"], "pc": query[stock_symbol]["pc"]}
+        ]
+        display_saved_stock(stock_symbol, query[stock_symbol], saved_stocks_count)
 
 
-def on_button_delete_click(symbol: str):
+def on_button_delete_click(stock_symbol: str):
     stocks = get_saved_stocks()
-    stocks.remove(symbol)
-    save_saved_stocks(stocks)
+    stocks.remove(stock_symbol)
+    save_saved_stocks_to_file(stocks)
 
-    del stock_prices[symbol]
+    del stock_prices[stock_symbol]
 
     for widget in frame_container.winfo_children():
         widget.destroy()
 
-    for index, stock in enumerate(stocks):
-        display_saved_stocks(stock, stock_prices[stock][0]["c"], stock_prices[stock][0]["pc"], index)
+    for row, stock in enumerate(stocks):
+        display_saved_stock(stock, stock_prices[stock][0], row)
 
 
-def save_stock_locally(symbol: str):
+def save_stock_locally(stock_symbol: str):
     saved_stocks = get_saved_stocks()
-    if symbol not in saved_stocks:
-        saved_stocks.append(symbol)
-        save_saved_stocks(saved_stocks)
+    if stock_symbol not in saved_stocks:
+        saved_stocks.append(stock_symbol)
+        save_saved_stocks_to_file(saved_stocks)
 
 
-def save_saved_stocks(saved_stocks):
-    with open(saved_stocks_file, "w") as file:
+def save_saved_stocks_to_file(saved_stocks):
+    with open(SAVED_STOCKS_FILE, "w", encoding="utf-8") as file:
         json.dump(saved_stocks, file)
 
 
-def fetch_quote(stock: str, query_result: dict):
-    query_result[stock] = finnhub_client.quote(stock)
+def fetch_quote(stock_symbol: str, query_result: dict):
+    query_result[stock_symbol] = finnhub_client.quote(stock_symbol)
 
 
 def load_saved_stocks():
@@ -74,26 +79,32 @@ def load_saved_stocks():
     for thread in threads:
         thread.join()
 
-    for index, stock in enumerate(stocks):
-        display_saved_stocks(stock, queries[stock]["c"], queries[stock]["pc"], index)
-        stock_prices[stock] = [{"c": queries[stock]["c"], "pc": queries[stock]["pc"]}]
+    for row, stock in enumerate(stocks):
+        display_saved_stock(stock, queries[stock], row)
+        stock_prices[stock] = [
+            {"c": queries[stock]["c"], "pc": queries[stock]["pc"]}
+        ]
 
 
-def display_saved_stocks(symbol: str, current_price: float, last_price: float, row: int):
-    frame_stock = tk.Frame(frame_container)
+def display_saved_stock(stock_symbol: str, stock_data: dict, row: int):
+    frame_stock = tk.Frame(
+        frame_container,
+        highlightbackground="black",
+        highlightthickness=1
+    )
     frame_stock.grid_columnconfigure(0, weight=1)
 
-    label_symbol = tk.Label(frame_stock, text=symbol, width=10)
+    label_symbol = tk.Label(frame_stock, text=stock_symbol, width=10)
     label_symbol.grid(row=0, column=0, sticky="ew")
 
     empty_label4 = tk.Label(frame_stock, width=25)
     empty_label4.grid(row=0, column=1)
 
-    label_price = tk.Label(frame_stock, text=current_price, width=10)
+    label_price = tk.Label(frame_stock, text=stock_data["c"], width=10)
 
     button_delete = tk.Button(
         frame_stock,
-        command=lambda: on_button_delete_click(symbol),
+        command=lambda: on_button_delete_click(stock_symbol),
         text="Delete",
         width=6,
         height=1,
@@ -101,43 +112,50 @@ def display_saved_stocks(symbol: str, current_price: float, last_price: float, r
         fg="white", )
     button_delete.grid(row=1, column=2, pady=10)
 
-    if current_price > last_price:
+    if stock_data["c"] > stock_data["pc"]:
         label_price.config(fg="green")
-    elif current_price < last_price:
+    elif stock_data["c"] < stock_data["pc"]:
         label_price.config(fg="red")
 
     label_price.grid(row=0, column=2, sticky="ew")
 
-    frame_stock.grid(row=row, column=0)
+    frame_stock.grid(row=row, column=0, pady=(0, 5))
 
 
 def get_saved_stocks() -> list:
-    if not os.path.isfile(saved_stocks_file):
-        with open(saved_stocks_file, "w") as file:
+    if not os.path.isfile(SAVED_STOCKS_FILE):
+        with open(SAVED_STOCKS_FILE, "w", encoding="utf-8") as file:
             json.dump([], file)
     try:
-        with open(saved_stocks_file, "r") as file:
+        with open(SAVED_STOCKS_FILE, "r", encoding="utf-8") as file:
             return json.load(file)
     except FileNotFoundError:
         return []
 
 
-def create_search_result(symbol: str, row: int):
-    frame_temp = tk.Frame(frameL_results)
+def create_search_result(stock_symbol: str, row: int):
+    frame_temp = tk.Frame(frame_left_results)
     frame_temp.grid_columnconfigure(0, weight=1)
 
-    label_name = tk.Label(frame_temp, text=symbol, width=10)
+    label_name = tk.Label(frame_temp,
+                          text=stock_symbol,
+                          width=10
+                          )
     label_name.grid(row=0, column=0, sticky="ew")
 
     empty_label3 = tk.Label(frame_temp, width=25)
     empty_label3.grid(row=0, column=1)
 
-    label_price = tk.Label(frame_temp, text=finnhub_client.quote(symbol)["c"], width=10)
+    label_price = tk.Label(
+        frame_temp,
+        text=finnhub_client.quote(stock_symbol)["c"],
+        width=10
+    )
     label_price.grid(row=0, column=2, sticky="ew")
 
     button_add = tk.Button(
         frame_temp,
-        command=lambda: on_button_add_click(symbol),
+        command=lambda: on_button_add_click(stock_symbol),
         text="Add",
         width=4,
         height=1,
@@ -149,17 +167,19 @@ def create_search_result(symbol: str, row: int):
     frame_temp.grid(row=row, column=0, pady=5, padx=15)
 
 
-def fetch_search_results(entry_text):
+def fetch_search_results(entry_text: str):
     loading_label.config(text="Loading...")
 
     data = finnhub_client.symbol_lookup(entry_text)
     symbols = []
-    [symbols.append(symbol) for symbol in [entry['symbol'].split('.')[0] for entry in data.get('result', [])] if
-     symbol not in symbols]
-    row = 0
-    for symbol in symbols:
+    [symbols.append(symbol)
+     for symbol in [entry["symbol"].split(".")[0]
+                    for entry in data.get("result", [])]
+     if symbol not in symbols]
+
+    for row, symbol in enumerate(symbols):
         create_search_result(symbol, row)
-        row += 1
+
     loading_label.config(text="")
 
 
@@ -170,7 +190,7 @@ def on_button_click_search():
 
 
 def on_button_click_clear():
-    for widget in frameL_results.winfo_children():
+    for widget in frame_left_results.winfo_children():
         widget.destroy()
 
 
@@ -186,31 +206,31 @@ def on_configure(event):
 
 root = tk.Tk()
 root.title("Stocks")
-root.state('zoomed')
+root.state("zoomed")
 
 
-default_text = "Enter your text here"
+DEFAULT_TEXT = "Enter your text here"
 stock_prices = {}
 
 frame_container_grande = tk.Frame(root)
 frame_container_grande.grid(row=0, column=0, sticky="nsew")
 
-frameL = tk.Frame(frame_container_grande)
-frameL_results = tk.Frame(frameL)
+frame_left = tk.Frame(frame_container_grande)
+frame_left_results = tk.Frame(frame_left)
 
-frameM = tk.Frame(frame_container_grande)
-frameM_saved_stocks = tk.Frame(frameM)
+frame_mid = tk.Frame(frame_container_grande)
+frame_mid_saved_stocks = tk.Frame(frame_mid)
 
-frameR = tk.Frame(frame_container_grande)
+frame_right = tk.Frame(frame_container_grande)
 
-# LEFT FRAME------------------------------------------------------------------------------------
+# LEFT FRAME---------------------------------------
 entry = tk.Entry(
-    frameL,
+    frame_left,
     width=60,
     fg="grey")
 
-entry.insert(0, default_text)
-entry.bind('<FocusIn>', on_entry_click)
+entry.insert(0, DEFAULT_TEXT)
+entry.bind("<FocusIn>", on_entry_click)
 entry.grid(
     row=0,
     column=0,
@@ -219,7 +239,7 @@ entry.grid(
     pady=(35, 10))
 
 button_search = tk.Button(
-    frameL,
+    frame_left,
     command=on_button_click_search,
     text="Search",
     width=10,
@@ -230,7 +250,7 @@ button_search = tk.Button(
 button_search.grid(row=0, column=2, pady=(35, 10))
 
 button_clear = tk.Button(
-    frameL,
+    frame_left,
     command=on_button_click_clear,
     text="Clear",
     width=10,
@@ -240,23 +260,29 @@ button_clear = tk.Button(
 
 button_clear.grid(row=1, column=2, pady=(5, 10))
 
-loading_label = tk.Label(frameL, text="", bg=frameL.cget("bg"))
+loading_label = tk.Label(frame_left, text="", bg=frame_left.cget("bg"))
 loading_label.grid(row=1, column=0, pady=10)
 
-frameL_results.grid(row=2, column=0)
+frame_left_results.grid(row=2, column=0)
 
-# MIDDLE FRAME------------------------------------------------------------------------------------
-times_font = font.Font(family='Times', size=20, slant='italic')
+# MIDDLE FRAME--------------------------------------
+times_font = font.Font(family="Times", size=20, slant="italic")
 
-label1 = tk.Label(frameM, text="My stocks:", bg="lightgreen", font=times_font)
-label1.grid(row=0, column=0)
+label_header = tk.Label(frame_mid, text="My stocks:",
+                        bg="lightgreen", font=times_font)
+label_header.grid(row=0, column=0)
 
-frameM_saved_stocks.grid(row=1, column=0, pady=(20, 0), sticky="nsew")
+frame_mid_saved_stocks.grid(row=1, column=0,
+                            pady=(20, 0), sticky="nsew")
 
-canvas = tk.Canvas(frameM_saved_stocks)
+canvas = tk.Canvas(frame_mid_saved_stocks)
 canvas.grid(row=0, column=0, sticky="nsew")
 
-scrollbar = tk.Scrollbar(frameM_saved_stocks, orient=tk.VERTICAL, command=canvas.yview)
+scrollbar = tk.Scrollbar(
+    frame_mid_saved_stocks,
+    orient=tk.VERTICAL,
+    command=canvas.yview
+)
 scrollbar.grid(row=0, column=1, sticky="ns")
 
 canvas.configure(yscrollcommand=scrollbar.set)
@@ -268,22 +294,22 @@ frame_container.bind("<Configure>", on_configure)
 
 # load_saved_stocks()
 
-# RIGHT FRAME------------------------------------------------------------------------------------
+# RIGHT FRAME-----------------------------------
 
-# ----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------
 update_prices()
 
-frameL.grid(row=0, column=0, stick="nsew")
+frame_left.grid(row=0, column=0, stick="nsew")
 
 empty_label1 = tk.Label(frame_container_grande, width=10)
-empty_label1.grid(row=0, column = 1)
+empty_label1.grid(row=0, column=1)
 
-frameM.grid(row=0, column=2, sticky="nsew")
+frame_mid.grid(row=0, column=2, sticky="nsew")
 
 empty_label2 = tk.Label(frame_container_grande, width=10)
-empty_label2.grid(row=0, column = 3)
+empty_label2.grid(row=0, column=3)
 
-frameR.grid(row=0, column=4, sticky="nsew")
+frame_right.grid(row=0, column=4, sticky="nsew")
 
 root.grid_rowconfigure(0, weight=1)
 root.grid_columnconfigure(0, weight=1)
@@ -291,7 +317,7 @@ root.grid_columnconfigure(0, weight=1)
 frame_container_grande.grid_rowconfigure(0, weight=1)
 # frame_container_grande.grid_columnconfigure(0, weight=1)
 
-frameM.grid_rowconfigure(1, weight=1)
-frameM_saved_stocks.grid_rowconfigure(0, weight=1)
+frame_mid.grid_rowconfigure(1, weight=1)
+frame_mid_saved_stocks.grid_rowconfigure(0, weight=1)
 
 root.mainloop()
