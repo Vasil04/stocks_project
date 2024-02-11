@@ -16,26 +16,35 @@ SAVED_STOCKS_FILE = "saved_stocks.json"
 
 
 def save_saved_stocks_to_file(saved_stocks: list) -> None:
+    with open(SAVED_STOCKS_FILE, "r", encoding="utf-8") as file:
+        data = json.load(file)
+    data["STOCKS"] = saved_stocks
+
     with open(SAVED_STOCKS_FILE, "w", encoding="utf-8") as file:
-        json.dump(saved_stocks, file)
+        json.dump(data, file)
 
 
 def save_stock_locally(stock_symbol: str) -> None:
-    saved_stocks = get_saved_stocks()
+    saved_stocks = get_saved_stocks()["STOCKS"]
     if stock_symbol not in saved_stocks:
         saved_stocks.append(stock_symbol)
         save_saved_stocks_to_file(saved_stocks)
 
 
-def get_saved_stocks() -> list:
+def get_saved_stocks() -> dict:
     if not os.path.isfile(SAVED_STOCKS_FILE):
+        data = {
+            "STOCKS": [],
+            "EMAIL": "",
+            "NOTIFICATIONS": {}
+        }
         with open(SAVED_STOCKS_FILE, "w", encoding="utf-8") as file:
-            json.dump([], file)
+            json.dump(data, file)
     try:
         with open(SAVED_STOCKS_FILE, "r", encoding="utf-8") as file:
             return json.load(file)
     except FileNotFoundError:
-        return []
+        return {}
 
 
 def fetch_quote(stock_symbol: str,
@@ -43,8 +52,8 @@ def fetch_quote(stock_symbol: str,
     query_result[stock_symbol] = finnhub_client.quote(stock_symbol)
 
 
-def load_saved_stocks(frame_container: tk.Frame) -> None:
-    stocks = get_saved_stocks()
+def load_saved_stocks(frame_container: tk.Frame, root: tk.Tk) -> None:
+    stocks = get_saved_stocks()["STOCKS"]
     queries = {}
 
     for widget in frame_container.winfo_children():
@@ -63,7 +72,8 @@ def load_saved_stocks(frame_container: tk.Frame) -> None:
 
     for row, stock in enumerate(stocks):
         queries[stock]["stock_symbol"] = stock
-        gui.display_saved_stock(frame_container,
+        widgets_dict = {"frame_container": frame_container, "root": root}
+        gui.display_saved_stock(widgets_dict,
                                 queries[stock],
                                 row)
         STOCK_PRICES[stock] = [
@@ -75,7 +85,7 @@ def load_saved_stocks(frame_container: tk.Frame) -> None:
 
 def update_prices(root: tk.Tk,
                   frame_container: tk.Frame) -> None:
-    load_saved_stocks(frame_container)
+    load_saved_stocks(frame_container, root)
     print("Updating...")
     root.after(20000, lambda: update_prices(root,
                                             frame_container))
@@ -130,7 +140,8 @@ def create_search_result(stock_symbol: str,
     button_add = tk.Button(
         frame_temp,
         command=lambda: click_events.on_button_add_click(stock_symbol,
-                                                         frames_dict["frame_container"]),
+                                                         frames_dict["frame_container"],
+                                                         frames_dict["root"]),
         text="Add",
         width=4,
         height=1,
