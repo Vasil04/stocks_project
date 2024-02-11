@@ -1,3 +1,4 @@
+"""Creates the graphical elements for the tkinter window"""
 import tkinter as tk
 from tkinter import font
 
@@ -7,10 +8,30 @@ import stock_data_fetching
 
 def on_configure(event: tk.Event,
                  canvas: tk.Canvas) -> None:
+    """
+    Adjust the scroll region of a canvas to fit its contents.
+
+    Parameters:
+        event (tk.Event): The event triggering the function.
+        canvas (tk.Canvas): The canvas to adjust.
+
+    Returns:
+        None
+    """
     canvas.configure(scrollregion=canvas.bbox("all"))
 
 
 def open_popup(root: tk.Tk, stock_symbol: str) -> None:
+    """
+    Open a popup window to configure notification settings for a stock.
+
+    Parameters:
+        root (tk.Tk): The root Tkinter window.
+        stock_symbol (str): The symbol of the stock.
+
+    Returns:
+        None
+    """
     popup = tk.Toplevel(root)
     popup.geometry("400x200")
     popup.title("Notification pop-up")
@@ -22,12 +43,16 @@ def open_popup(root: tk.Tk, stock_symbol: str) -> None:
 
     var.set("")
 
-    radio_button1 = tk.Radiobutton(popup, text="Notify me if the price goes above or equals",
-                                   variable=var,
-                                   value=">=")
-    radio_button2 = tk.Radiobutton(popup, text="Notify me if the price goes below or equals",
-                                   variable=var,
-                                   value="<=")
+    radio_button1 = tk.Radiobutton(
+        popup, text="Notify me if the price goes above or equals",
+        variable=var,
+        value=">="
+    )
+    radio_button2 = tk.Radiobutton(
+        popup, text="Notify me if the price goes below or equals",
+        variable=var,
+        value="<="
+    )
 
     radio_button1.pack(anchor=tk.W)
     radio_button2.pack(anchor=tk.W)
@@ -47,11 +72,15 @@ def open_popup(root: tk.Tk, stock_symbol: str) -> None:
 
     button_done = tk.Button(
         popup,
-        command=lambda: click_events.button_done_click({"entry": entry_desired_price,
-                                                        "feedback": feedback_label,
-                                                        "var": var,
-                                                        "popup": popup},
-                                                       stock_symbol),
+        command=lambda: click_events.button_done_click(
+            {
+                "entry": entry_desired_price,
+                "feedback": feedback_label,
+                "var": var,
+                "popup": popup
+            },
+            stock_symbol
+        ),
         text="Done",
         width=5,
         height=1,
@@ -64,6 +93,17 @@ def open_popup(root: tk.Tk, stock_symbol: str) -> None:
 def display_saved_stock(widgets_dict: dict,
                         stock_data: dict,
                         row: int) -> None:
+    """
+    Display information for a saved stock in a frame.
+
+    Parameters:
+        widgets_dict (dict): A dictionary containing required widgets.
+        stock_data (dict): A dictionary containing stock data.
+        row (int): The row index for the frame placement.
+
+    Returns:
+        None
+    """
     frame_stock = tk.Frame(
         widgets_dict["frame_container"],
         highlightbackground="black",
@@ -148,6 +188,16 @@ def display_saved_stock(widgets_dict: dict,
 
 def setup_expanded_container(stock_symbol: str,
                              frame_container: tk.Frame) -> None:
+    """
+    Set up an expanded container to display detailed stock information.
+
+    Parameters:
+        stock_symbol (str): The symbol of the stock.
+        frame_container (tk.Frame): The frame to contain the expanded details.
+
+    Returns:
+        None
+    """
     prices = stock_data_fetching.STOCK_PRICES[stock_symbol][0]
     other_stock_data = (stock_data_fetching.
                         get_other_data(stock_symbol))
@@ -229,6 +279,15 @@ def setup_expanded_container(stock_symbol: str,
 
 
 def setup_gui(root: tk.Tk) -> None:
+    """
+    Set up the main graphical user interface (GUI) for the application.
+
+    Parameters:
+        root (tk.Tk): The Tkinter root window.
+
+    Returns:
+        None
+    """
     frame_container_grande = tk.Frame(root)
     frame_container_grande.grid(row=0,
                                 column=0,
@@ -344,13 +403,19 @@ def setup_gui(root: tk.Tk) -> None:
         frame_right,
         width=60,
         fg="grey")
-    entry_email_text = "Enter an email where you would like to receive notifications"
+    entry_email_text = (
+        "Enter an email where you would like "
+        "to receive notifications"
+    )
     entry_email.insert(0, entry_email_text)
-    entry_email.bind("<FocusIn>",
-                     lambda event: click_events.on_entry_click(event,
-                                                               entry_email,
-                                                               entry_email_text)
-                     )
+    entry_email.bind(
+        "<FocusIn>",
+        lambda event: click_events.on_entry_click(
+            event,
+            entry_email,
+            entry_email_text
+        )
+    )
     entry_email.grid(
         row=0,
         column=0,
@@ -411,7 +476,10 @@ def setup_gui(root: tk.Tk) -> None:
                                        pady=10)
 
     # ----------------------------------------------
-    stock_data_fetching.update_prices(root, frame_extended_data_container, frame_container)
+    stock_data_fetching.update_prices(
+        root,
+        frame_extended_data_container,
+        frame_container)
 
     frame_left.grid(row=0,
                     column=0,
