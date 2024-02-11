@@ -87,10 +87,7 @@ def on_button_delete_click(stock_symbol: str,
     for row, stock in enumerate(stocks):
         stock_data = stock_data_fetching.STOCK_PRICES[stock][0]
         stock_data["stock_symbol"] = stock
-        widgets_dict = {
-            "frame_container": widget_dict["frame_container"],
-            "root": widget_dict["root"]}
-        gui.display_saved_stock(widgets_dict, stock_data, row)
+        gui.display_saved_stock(widget_dict, stock_data, row)
 
 
 def on_button_click_clear_right(frame_container: tk.Frame) -> None:
@@ -132,8 +129,7 @@ def on_button_add_click(stock_symbol: str,
             len(stock_data_fetching.get_saved_stocks()["STOCKS"])
         )
         stock_data_fetching.STOCK_PRICES[stock_symbol] = [
-            {"c": query[stock_symbol]["c"],
-             "pc": query[stock_symbol]["pc"]}
+            query[stock_symbol]
         ]
         query[stock_symbol]["stock_symbol"] = stock_symbol
         gui.display_saved_stock(widget_dict,
