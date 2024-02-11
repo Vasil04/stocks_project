@@ -118,9 +118,14 @@ def button_done_click(widgets_dict: dict, stock_symbol: str):
                   "w",
                   encoding="utf-8") as file:
             json.dump(data, file)
+        widgets_dict["popup"].destroy()
 
     else:
         widgets_dict["feedback"].config(text="Invalid input")
         widgets_dict["feedback"].after(2000,
                                        lambda:
                                        widgets_dict["feedback"].config(text=""))
+
+
+def on_button_remove_notify_click(stock_symbol: str) -> None:
+    stock_data_fetching.remove_stock_notification(stock_symbol)

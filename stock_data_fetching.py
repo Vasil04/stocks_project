@@ -7,6 +7,7 @@ import finnhub
 
 import click_events
 import gui
+import email_handler
 
 finnhub_client = finnhub.Client(
     api_key="cmvoki1r01qkcvkeu40gcmvoki1r01qkcvkeu410"
@@ -45,6 +46,24 @@ def get_saved_stocks() -> dict:
             return json.load(file)
     except FileNotFoundError:
         return {}
+
+
+def get_stocks_for_notifications() -> dict:
+    with open(SAVED_STOCKS_FILE, "r", encoding="utf-8") as file:
+        data = json.load(file)
+    return data["NOTIFICATIONS"]
+
+
+def remove_stock_notification(stock_symbol: str) -> None:
+    with open(SAVED_STOCKS_FILE, "r", encoding="utf-8") as file:
+        data = json.load(file)
+
+    del data["NOTIFICATIONS"][stock_symbol]
+
+    with open(SAVED_STOCKS_FILE,
+              "w",
+              encoding="utf-8") as file:
+        json.dump(data, file)
 
 
 def fetch_quote(stock_symbol: str,
@@ -87,6 +106,37 @@ def update_prices(root: tk.Tk,
                   frame_container: tk.Frame) -> None:
     load_saved_stocks(frame_container, root)
     print("Updating...")
+
+    email = email_handler.get_email()
+    stocks_to_notify = get_stocks_for_notifications()
+
+    if email != "" and stocks_to_notify != {}:
+        email_body = "The following stocks have reached your wanted price ranges:"
+        has_notification = False
+        for stock in stocks_to_notify:
+            if (stocks_to_notify[stock][0]
+                    == ">="
+                    and STOCK_PRICES[stock][0]["c"]
+                    >= stocks_to_notify[stock][1]):
+                email_body += (f"\n{stock} has surpassed "
+                               f"${stocks_to_notify[stock][1]}"
+                               f" and is now valued at ${STOCK_PRICES[stock][0]["c"]}")
+                remove_stock_notification(stock)
+                has_notification = True
+            elif (stocks_to_notify[stock][0]
+                    == "<="
+                    and STOCK_PRICES[stock][0]["c"]
+                    <= stocks_to_notify[stock][1]):
+                email_body += (f"\n{stock} has fallen bellow "
+                               f"${stocks_to_notify[stock][1]}"
+                               f" and is now valued at ${STOCK_PRICES[stock][0]["c"]}")
+                remove_stock_notification(stock)
+                has_notification = True
+        if has_notification:
+            email_handler.send_email("Stock prices notification",
+                                     email_body,
+                                     [email])
+
     root.after(20000, lambda: update_prices(root,
                                             frame_container))
 

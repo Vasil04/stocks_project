@@ -49,7 +49,8 @@ def open_popup(root: tk.Tk, stock_symbol: str) -> None:
         popup,
         command=lambda: click_events.button_done_click({"entry": entry_desired_price,
                                                         "feedback": feedback_label,
-                                                        "var": var},
+                                                        "var": var,
+                                                        "popup": popup},
                                                        stock_symbol),
         text="Done",
         width=5,
@@ -77,44 +78,57 @@ def display_saved_stock(widgets_dict: dict,
                       column=0,
                       sticky="ew")
 
-    empty_label4 = tk.Label(frame_stock, width=25)
+    empty_label4 = tk.Label(frame_stock, width=20)
     empty_label4.grid(row=0, column=1)
 
     label_price = tk.Label(frame_stock,
                            text=stock_data["c"],
                            width=10)
 
+    label_price.grid(row=0,
+                     column=3,
+                     sticky="ew")
+
     button_notify = tk.Button(
         frame_stock,
-        command=lambda: click_events.on_button_notify_click(stock_data["stock_symbol"],
-                                                            widgets_dict["root"]),
+        command=lambda: click_events.on_button_notify_click(
+            stock_data["stock_symbol"],
+            widgets_dict["root"]),
         text="Notify",
         width=6,
         height=1,
         bg="#41cc66",
         fg="white", )
-    button_notify.grid(row=1, column=1, pady=10, sticky="e")
+    button_notify.grid(row=1, column=1, pady=10, sticky="e", padx=10)
+
+    button_remove_notify = tk.Button(
+        frame_stock,
+        command=lambda: click_events.on_button_remove_notify_click(
+            stock_data["stock_symbol"]),
+        text="Remove n",
+        width=8,
+        height=1,
+        bg="#e32245",
+        fg="white", )
+    button_remove_notify.grid(row=1, column=2, pady=10, sticky="we")
 
     button_delete = tk.Button(
         frame_stock,
-        command=lambda: click_events.on_button_delete_click(stock_data["stock_symbol"],
-                                                            widgets_dict["frame_container"],
-                                                            widgets_dict["root"]),
+        command=lambda: click_events.on_button_delete_click(
+            stock_data["stock_symbol"],
+            widgets_dict["frame_container"],
+            widgets_dict["root"]),
         text="Delete",
         width=6,
         height=1,
         bg="#e32245",
         fg="white", )
-    button_delete.grid(row=1, column=2, pady=10)
+    button_delete.grid(row=1, column=3, pady=10)
 
     if stock_data["c"] > stock_data["pc"]:
         label_price.config(fg="green")
     elif stock_data["c"] < stock_data["pc"]:
         label_price.config(fg="red")
-
-    label_price.grid(row=0,
-                     column=2,
-                     sticky="ew")
 
     frame_stock.grid(row=row,
                      column=0,

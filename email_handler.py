@@ -19,12 +19,17 @@ def send_email(subject: str, body: str, recipients: list) -> None:
     msg["From"] = SENDER
     msg["To"] = ", ".join(recipients)
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp_server:
-        smtp_server.login(SENDER, APP_PASSWORD)
-        smtp_server.sendmail(SENDER,
-                             recipients,
-                             msg.as_string())
-    print("Message sent!")
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp_server:
+            smtp_server.login(SENDER, APP_PASSWORD)
+            smtp_server.sendmail(SENDER,
+                                 recipients,
+                                 msg.as_string())
+            print("Message sent!")
+    except (smtplib.SMTPRecipientsRefused, smtplib.SMTPSenderRefused) as e:
+        print(f"Failed to send email: {e}")
+    except smtplib.SMTPException as e:
+        print(f"SMTP error occurred: {e}")
 
 
 def save_email(email: str) -> None:
@@ -38,3 +43,11 @@ def save_email(email: str) -> None:
               "w",
               encoding="utf-8") as file:
         json.dump(data, file)
+
+
+def get_email() -> str:
+    with open(stock_data_fetching.SAVED_STOCKS_FILE,
+              "r",
+              encoding="utf-8") as file:
+        data = json.load(file)
+    return data["EMAIL"]
