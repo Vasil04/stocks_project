@@ -32,27 +32,30 @@ def on_button_click_search(entry_text: str,
 
 
 def on_button_delete_click(stock_symbol: str,
-                           frame_container: tk.Frame,
-                           root: tk.Tk) -> None:
+                           widget_dict: dict) -> None:
     stocks = stock_data_fetching.get_saved_stocks()["STOCKS"]
     stocks.remove(stock_symbol)
     stock_data_fetching.save_saved_stocks_to_file(stocks)
 
     del stock_data_fetching.STOCK_PRICES[stock_symbol]
 
-    for widget in frame_container.winfo_children():
+    for widget in widget_dict["frame_container"].winfo_children():
         widget.destroy()
 
     for row, stock in enumerate(stocks):
         stock_data = stock_data_fetching.STOCK_PRICES[stock][0]
         stock_data["stock_symbol"] = stock
-        widgets_dict = {"frame_container": frame_container, "root": root}
+        widgets_dict = {"frame_container": widget_dict["frame_container"], "root": widget_dict["root"]}
         gui.display_saved_stock(widgets_dict, stock_data, row)
 
 
+def on_button_click_clear_right(frame_container: tk.Frame) -> None:
+    for widget in frame_container.winfo_children():
+        widget.destroy()
+
+
 def on_button_add_click(stock_symbol: str,
-                        frame_container: tk.Frame,
-                        root: tk.Tk):
+                        widget_dict: dict):
     exists = not stock_symbol not in stock_data_fetching.get_saved_stocks()["STOCKS"]
     stock_data_fetching.save_stock_locally(stock_symbol)
     if not exists:
@@ -64,8 +67,7 @@ def on_button_add_click(stock_symbol: str,
              "pc": query[stock_symbol]["pc"]}
         ]
         query[stock_symbol]["stock_symbol"] = stock_symbol
-        widgets_dict = {"frame_container": frame_container, "root": root}
-        gui.display_saved_stock(widgets_dict,
+        gui.display_saved_stock(widget_dict,
                                 query[stock_symbol],
                                 saved_stocks_count)
 
@@ -125,6 +127,15 @@ def button_done_click(widgets_dict: dict, stock_symbol: str):
         widgets_dict["feedback"].after(2000,
                                        lambda:
                                        widgets_dict["feedback"].config(text=""))
+
+
+def on_button_expand_click(
+        stock_symbol: str,
+        frame_expand_container: tk.Frame) -> None:
+    for widget in frame_expand_container.winfo_children():
+        widget.destroy()
+    gui.setup_expanded_container(stock_symbol,
+                                 frame_expand_container)
 
 
 def on_button_remove_notify_click(stock_symbol: str) -> None:

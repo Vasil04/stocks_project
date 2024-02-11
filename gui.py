@@ -89,6 +89,18 @@ def display_saved_stock(widgets_dict: dict,
                      column=3,
                      sticky="ew")
 
+    button_expand = tk.Button(
+        frame_stock,
+        command=lambda: click_events.on_button_expand_click(
+            stock_data["stock_symbol"],
+            widgets_dict["frame_expand_container"]),
+        text="Expand",
+        width=6,
+        height=1,
+        bg="#c4c4c4",
+        fg="black",)
+    button_expand.grid(row=1, column=0, pady=10, sticky="e")
+
     button_notify = tk.Button(
         frame_stock,
         command=lambda: click_events.on_button_notify_click(
@@ -116,8 +128,7 @@ def display_saved_stock(widgets_dict: dict,
         frame_stock,
         command=lambda: click_events.on_button_delete_click(
             stock_data["stock_symbol"],
-            widgets_dict["frame_container"],
-            widgets_dict["root"]),
+            widgets_dict),
         text="Delete",
         width=6,
         height=1,
@@ -133,6 +144,88 @@ def display_saved_stock(widgets_dict: dict,
     frame_stock.grid(row=row,
                      column=0,
                      pady=(0, 5))
+
+
+def setup_expanded_container(stock_symbol: str,
+                             frame_container: tk.Frame) -> None:
+    prices = stock_data_fetching.STOCK_PRICES[stock_symbol][0]
+    other_stock_data = (stock_data_fetching.
+                        get_other_data(stock_symbol))
+
+    if other_stock_data != {}:
+        label_company_name = tk.Label(frame_container,
+                                      text=other_stock_data["name"])
+        label_company_name.grid(row=0, column=0, sticky="w")
+
+        label_company_country = tk.Label(
+            frame_container,
+            text=f"This company's headquarters are in "
+            f"{other_stock_data["country"]}")
+        label_company_country.grid(row=1, column=0, sticky="w")
+
+        label_company_currency = tk.Label(
+            frame_container,
+            text=f"This company's stocks are traded in "
+            f"{other_stock_data["currency"]} on the "
+            f"{other_stock_data["exchange"]}")
+        label_company_currency.grid(row=2, column=0, sticky="w")
+
+        label_company_cap = tk.Label(
+            frame_container,
+            text=f"Market capitalization: "
+            f"{other_stock_data["marketCapitalization"]}")
+        label_company_cap.grid(row=3, column=0, sticky="w")
+
+    label_current_price = tk.Label(
+        frame_container,
+        text=f"Current price: $"
+        f"{prices["c"]}")
+    label_current_price.grid(row=4, column=0, sticky="w")
+
+    label_previous_close_price = tk.Label(
+        frame_container,
+        text=f"Previous close price: $"
+        f"{prices["pc"]}")
+    label_previous_close_price.grid(row=5, column=0, sticky="w")
+
+    label_percent_change = tk.Label(
+        frame_container,
+        text=f"Percent change: "
+        f"{prices["d"]}%")
+    label_percent_change.grid(row=6, column=0, sticky="w")
+
+    label_high_price = tk.Label(
+        frame_container,
+        text=f"High price of the day: $"
+        f"{prices["h"]}")
+    label_high_price.grid(row=7, column=0, sticky="w")
+
+    label_low_price = tk.Label(
+        frame_container,
+        text=f"Low price of the day: $"
+        f"{prices["l"]}")
+    label_low_price.grid(row=8, column=0, sticky="w")
+
+    label_open_price = tk.Label(
+        frame_container,
+        text=f"open price of the day: $"
+        f"{prices["l"]}")
+    label_open_price.grid(row=9, column=0, sticky="w")
+
+    button_clear = tk.Button(
+        frame_container,
+        command=lambda:
+        click_events.on_button_click_clear_right(frame_container),
+        text="Clear",
+        width=10,
+        height=1,
+        bg="#c4c4c4",
+        fg="black", )
+
+    button_clear.grid(row=9,
+                      column=2,
+                      pady=(0, 5),
+                      sticky="e")
 
 
 def setup_gui(root: tk.Tk) -> None:
@@ -169,11 +262,13 @@ def setup_gui(root: tk.Tk) -> None:
 
     button_search = tk.Button(
         frame_left,
-        command=lambda: click_events.on_button_click_search(entry.get(),
-                                                            loading_label,
-                                                            {"frame_left_results": frame_left_results,
-                                                             "frame_container": frame_container,
-                                                             "root": root}),
+        command=lambda: click_events.on_button_click_search(
+            entry.get(),
+            loading_label,
+            {"frame_left_results": frame_left_results,
+             "frame_container": frame_container,
+             "root": root,
+             "frame_expand_container": frame_extended_data_container}),
         text="Search",
         width=10,
         height=1,
@@ -305,8 +400,18 @@ def setup_gui(root: tk.Tk) -> None:
                        column=3,
                        pady=(5, 10))
 
+    frame_extended_data_container = tk.Frame(frame_right,
+                                             highlightbackground="black",
+                                             highlightthickness=1
+                                             )
+    frame_extended_data_container.grid(row=2,
+                                       column=0,
+                                       columnspan=4,
+                                       sticky="nsew",
+                                       pady=10)
+
     # ----------------------------------------------
-    stock_data_fetching.update_prices(root, frame_container)
+    stock_data_fetching.update_prices(root, frame_extended_data_container, frame_container)
 
     frame_left.grid(row=0,
                     column=0,

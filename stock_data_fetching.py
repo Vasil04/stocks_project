@@ -71,7 +71,9 @@ def fetch_quote(stock_symbol: str,
     query_result[stock_symbol] = finnhub_client.quote(stock_symbol)
 
 
-def load_saved_stocks(frame_container: tk.Frame, root: tk.Tk) -> None:
+def load_saved_stocks(frame_container: tk.Frame,
+                      frame_expand_container: tk.Frame,
+                      root: tk.Tk) -> None:
     stocks = get_saved_stocks()["STOCKS"]
     queries = {}
 
@@ -91,20 +93,24 @@ def load_saved_stocks(frame_container: tk.Frame, root: tk.Tk) -> None:
 
     for row, stock in enumerate(stocks):
         queries[stock]["stock_symbol"] = stock
-        widgets_dict = {"frame_container": frame_container, "root": root}
+        widgets_dict = {
+            "frame_container": frame_container,
+            "root": root,
+            "frame_expand_container": frame_expand_container}
         gui.display_saved_stock(widgets_dict,
                                 queries[stock],
                                 row)
         STOCK_PRICES[stock] = [
-            {"c": queries[stock]["c"],
-             "pc": queries[stock]["pc"]
-             }
+            queries[stock]
         ]
 
 
 def update_prices(root: tk.Tk,
+                  frame_expand_container: tk.Frame,
                   frame_container: tk.Frame) -> None:
-    load_saved_stocks(frame_container, root)
+    load_saved_stocks(frame_container,
+                      frame_expand_container,
+                      root)
     print("Updating...")
 
     email = email_handler.get_email()
@@ -138,6 +144,7 @@ def update_prices(root: tk.Tk,
                                      [email])
 
     root.after(20000, lambda: update_prices(root,
+                                            frame_expand_container,
                                             frame_container))
 
 
@@ -190,8 +197,7 @@ def create_search_result(stock_symbol: str,
     button_add = tk.Button(
         frame_temp,
         command=lambda: click_events.on_button_add_click(stock_symbol,
-                                                         frames_dict["frame_container"],
-                                                         frames_dict["root"]),
+                                                         frames_dict),
         text="Add",
         width=4,
         height=1,
@@ -202,3 +208,7 @@ def create_search_result(stock_symbol: str,
 
     frame_temp.grid(row=row, column=0,
                     pady=5, padx=15)
+
+
+def get_other_data(stock_symbol: str) -> dict:
+    return finnhub_client.company_profile2(symbol=stock_symbol)
