@@ -2,6 +2,7 @@
 import os
 import threading
 import json
+import requests
 
 import tkinter as tk
 import finnhub
@@ -99,7 +100,10 @@ def remove_stock_notification(stock_symbol: str) -> None:
     with open(SAVED_STOCKS_FILE, "r", encoding="utf-8") as file:
         data = json.load(file)
 
-    del data["NOTIFICATIONS"][stock_symbol]
+    try:
+        del data["NOTIFICATIONS"][stock_symbol]
+    except KeyError:
+        print(f"The stock symbol '{stock_symbol}' is not in notifications.")
 
     with open(SAVED_STOCKS_FILE,
               "w",
@@ -119,7 +123,15 @@ def fetch_quote(stock_symbol: str,
     Returns:
         None
     """
-    query_result[stock_symbol] = finnhub_client.quote(stock_symbol)
+    try:
+        response = finnhub_client.quote(stock_symbol)
+        query_result[stock_symbol] = response
+    except requests.exceptions.RequestException as e:
+        print(f"An error occurred while communicating with the API: {e}")
+    except finnhub.exceptions.FinnhubAPIException as e:
+        print(f"An API error occurred while fetching data for {stock_symbol}: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred while fetching data for {stock_symbol}: {e}")
 
 
 def load_saved_stocks(frame_container: tk.Frame,

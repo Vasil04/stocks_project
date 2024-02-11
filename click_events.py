@@ -57,10 +57,12 @@ def on_button_click_search(entry_text: str,
         None
     """
     on_button_click_clear(frames_dict["frame_left_results"])
-    threading.Thread(target=stock_data_fetching.fetch_search_results,
-                     args=(entry_text,
-                           loading_label,
-                           frames_dict)).start()
+    if entry_text != "":
+        threading.Thread(
+            target=stock_data_fetching.fetch_search_results,
+            args=(entry_text,
+                  loading_label,
+                  frames_dict)).start()
 
 
 def on_button_delete_click(stock_symbol: str,
